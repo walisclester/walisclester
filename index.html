@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Happy Birthday</title>
+    <style>
+        :root{
+          --bg1:#071026;
+          --bg2:#0b2b3a;
+          --accent:#ffd66b;
+          --accent2:#ff7aa2;
+          --text:#f7fbff;
+          --muted:rgba(247,251,255,0.75);
+        }
+        html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;}
+        body{
+          background: radial-gradient(800px 400px at 10% 10%, rgba(255,255,255,0.02), transparent),
+                      linear-gradient(180deg,var(--bg1),var(--bg2));
+          color:var(--text);overflow:hidden;
+          -webkit-font-smoothing:antialiased;
+        }
+
+        /* Centered minimal card */
+        .stage{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px;position:relative;z-index:1;}
+        .card{
+          width:min(820px,96%);border-radius:16px;padding:28px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+          box-shadow:0 18px 60px rgba(2,6,23,0.6);backdrop-filter: blur(6px);border:1px solid rgba(255,255,255,0.03);
+          position:relative;z-index:2;
+        }
+
+        /* Letter */
+        .greeting{font-size:28px;color:var(--accent);margin:0 0 8px 0;font-weight:800;}
+        .to{color:var(--muted);margin:0 0 18px 0;font-size:14px;}
+        .message{font-size:18px;line-height:1.7;color:var(--text);white-space:pre-wrap;min-height:220px;font-family:Georgia,serif;padding:8px 4px;}
+        .controls{display:flex;gap:12px;align-items:center;margin-top:18px;justify-content:flex-start;}
+        .btn{
+          background:linear-gradient(90deg,var(--accent),var(--accent2));color:#08121a;padding:10px 16px;border-radius:12px;border:none;font-weight:800;cursor:pointer;
+          box-shadow:0 8px 26px rgba(0,0,0,0.35);transition:transform .14s ease, box-shadow .14s;
+        }
+        .btn:active{transform:translateY(2px);box-shadow:0 6px 18px rgba(0,0,0,0.28);}
+
+        /* Balloons (randomly positioned but kept out of the card area) */
+        .balloon{
+          position:fixed;width:84px;height:116px;border-radius:60% 60% 50% 50%/60% 60% 40% 40%;
+          display:flex;align-items:center;justify-content:center;font-size:34px;color:#fff;font-weight:800;cursor:pointer;
+          box-shadow:0 12px 30px rgba(2,6,23,0.6);z-index:3;user-select:none;transition:transform .28s cubic-bezier(.2,.9,.2,1), opacity .28s ease;
+          opacity:0; transform:scale(.6) translateY(6px); pointer-events:none;
+        }
+        .balloon.visible{opacity:1; transform:scale(1) translateY(0); pointer-events:auto;}
+        .balloon .string{position:absolute;left:50%;transform:translateX(-50%);width:2px;height:86px;background:linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));bottom:-86px;border-radius:2px;}
+
+        /* Colors and subtle float offsets */
+        .c1{background:linear-gradient(180deg,#ff7aa2,#ff4d6d);animation:floatA 6s ease-in-out infinite;}
+        .c2{background:linear-gradient(180deg,#ffd86b,#ffb347);animation:floatB 5.6s ease-in-out infinite .2s;}
+        .c3{background:linear-gradient(180deg,#7cc7ff,#3b8cff);animation:floatC 6.4s ease-in-out infinite .1s;}
+        .c4{background:linear-gradient(180deg,#7be495,#2bd18b);animation:floatD 5.8s ease-in-out infinite .15s;}
+        .c5{background:linear-gradient(180deg,#c58bff,#8b6bff);animation:floatA 6.2s ease-in-out infinite .05s;}
+        .c6{background:linear-gradient(180deg,#ffb3e6,#ff7ab3);animation:floatB 5.9s ease-in-out infinite .12s;}
+
+        @keyframes floatA{0%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-18px) rotate(4deg)}100%{transform:translateY(0) rotate(-4deg)}}
+        @keyframes floatB{0%{transform:translateY(0) rotate(3deg)}50%{transform:translateY(-22px) rotate(-3deg)}100%{transform:translateY(0) rotate(3deg)}}
+        @keyframes floatC{0%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-20px) rotate(2deg)}100%{transform:translateY(0) rotate(-2deg)}}
+        @keyframes floatD{0%{transform:translateY(0) rotate(2deg)}50%{transform:translateY(-16px) rotate(-2deg)}100%{transform:translateY(0) rotate(2deg)}}
+
+        /* Confetti canvas */
+        canvas.confetti{position:fixed;inset:0;pointer-events:none;z-index:4;}
+
+        /* Small hint */
+        .hint{font-size:12px;color:var(--muted);margin-top:12px;}
+        @media (max-width:720px){
+          /* On small screens keep focus on letter: hide balloons */
+          .balloon{display:none;}
+          .card{padding:20px;}
+        }
+    </style>
+</head>
+<body>
+<canvas class="confetti" id="confettiCanvas"></canvas>
+
+<div class="stage">
+    <div class="card" role="main" aria-labelledby="greet" id="card">
+        <h1 id="greet" class="greeting">Happy Birthday</h1>
+        <div class="to">To <strong id="recipientName">Friend</strong></div>
+
+        <div id="message" class="message" aria-live="polite"></div>
+
+        <div class="controls">
+            <!-- Play button removed per request; More Confetti kept and styled as primary -->
+            <button id="moreBtn" class="btn" aria-label="More confetti">More Confetti</button>
+        </div>
+
+        <div class="hint">Tip: Click More Confetti for extra celebration. Pop the balloons for a surprise burst — they will return.</div>
+    </div>
+</div>
+
+<!-- Balloon elements (will be positioned randomly by script and reappear after being popped) -->
+<div class="balloon c1" data-idx="1" role="button" aria-label="Balloon 1">🎈<div class="string"></div></div>
+<div class="balloon c2" data-idx="2" role="button" aria-label="Balloon 2">🎈<div class="string"></div></div>
+<div class="balloon c3" data-idx="3" role="button" aria-label="Balloon 3">🎈<div class="string"></div></div>
+<div class="balloon c4" data-idx="4" role="button" aria-label="Balloon 4">🎈<div class="string"></div></div>
+<div class="balloon c5" data-idx="5" role="button" aria-label="Balloon 5">🎈<div class="string"></div></div>
+<div class="balloon c6" data-idx="6" role="button" aria-label="Balloon 6">🎈<div class="string"></div></div>
+
+<script>
+    /* ======= Customize here ======= */
+    const RECIPIENT = "Nixie Kai";
+    const MESSAGE_LINES = [
+      "Dear Mhie,",
+      "Blessed Sunday mhieee. Kalla kaano lang ngem 21st birthday mon gayam hahaha.",
+      "I want to thank you for being kind. Your encouragement really does give me courage.",
+      "Take care of your health mhieee, uray nu busy ka, ta anya ngay garud, on the warpath ka to latin honors eyyy.",
+      "Kayang kayam dayta mhieee, I support you.",
+      "Happy Birthday!",
+      "— Your Son,"
+    ];
+    const TYPING_SPEED = 28;
+    const LINE_PAUSE = 700;
+    const BALLOON_RESPAWN_MS = 5000; // balloons reappear 5 seconds after being popped
+    /* ============================== */
+
+    document.getElementById('recipientName').textContent = RECIPIENT;
+    const messageEl = document.getElementById('message');
+    const moreBtn = document.getElementById('moreBtn');
+    const balloons = Array.from(document.querySelectorAll('.balloon'));
+    const cardEl = document.getElementById('card');
+
+    let typingTimeouts = [];
+    let confettiEngine;
+
+    /* Typewriter: auto-plays on load (play button removed) */
+    function playLetter(){
+      clearTyping();
+      messageEl.textContent = "";
+      let totalDelay = 0;
+      MESSAGE_LINES.forEach((line, idx) => {
+        const start = totalDelay;
+        totalDelay += line.length * TYPING_SPEED + LINE_PAUSE;
+        const t = setTimeout(() => {
+          typeLine(line + (idx < MESSAGE_LINES.length-1 ? "\n\n" : ""), TYPING_SPEED);
+        }, start);
+        typingTimeouts.push(t);
+      });
+      const finish = setTimeout(()=>{ burstConfetti(90); }, totalDelay + 200);
+      typingTimeouts.push(finish);
+    }
+
+    function typeLine(text, speed){
+      let i = 0;
+      const step = () => {
+        if(i < text.length){
+          messageEl.textContent += text.charAt(i);
+          i++;
+          requestAnimationFrame(()=>setTimeout(step, speed));
+        }
+      };
+      step();
+    }
+
+    function clearTyping(){
+      typingTimeouts.forEach(t => clearTimeout(t));
+      typingTimeouts = [];
+    }
+
+    /* Confetti engine */
+    function initConfetti(){
+      const canvas = document.getElementById('confettiCanvas');
+      const ctx = canvas.getContext('2d');
+      let W = canvas.width = innerWidth;
+      let H = canvas.height = innerHeight;
+      window.addEventListener('resize', ()=>{ W = canvas.width = innerWidth; H = canvas.height = innerHeight; });
+
+      const pieces = [];
+      function spawn(n, originX, originY){
+        for(let i=0;i<n;i++){
+          pieces.push({
+            x: originX ?? Math.random()*W,
+            y: originY ?? Math.random()*H*0.2,
+            vx: (Math.random()-0.5)*6,
+            vy: Math.random()*-6 - 2,
+            size: 6 + Math.random()*8,
+            rot: Math.random()*360,
+            vr: (Math.random()-0.5)*10,
+            color: `hsl(${Math.floor(Math.random()*360)},80%,60%)`,
+            life: 0,
+            ttl: 120 + Math.random()*80
+          });
+        }
+      }
+
+      function update(){
+        ctx.clearRect(0,0,W,H);
+        for(let i=pieces.length-1;i>=0;i--){
+          const p = pieces[i];
+          p.life++;
+          p.vy += 0.18;
+          p.x += p.vx;
+          p.y += p.vy;
+          p.rot += p.vr;
+          ctx.save();
+          ctx.translate(p.x,p.y);
+          ctx.rotate(p.rot * Math.PI/180);
+          ctx.fillStyle = p.color;
+          ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size*0.6);
+          ctx.restore();
+          if(p.y > H + 50 || p.life > p.ttl) pieces.splice(i,1);
+        }
+        requestAnimationFrame(update);
+      }
+      update();
+
+      confettiEngine = { spawn };
+    }
+
+    function burstConfetti(amount=80, x=null, y=null){
+      if(!confettiEngine) initConfetti();
+      confettiEngine.spawn(amount, x, y);
+    }
+
+    /* More confetti button */
+    moreBtn.addEventListener('click', ()=>{ burstConfetti(220); });
+
+    /* Balloon pop behavior with respawn after 5 seconds */
+    balloons.forEach(b => {
+      b.addEventListener('click', (e) => {
+        // immediate pop burst
+        const rect = b.getBoundingClientRect();
+        burstConfetti(48, rect.left + rect.width/2, rect.top + rect.height/2);
+
+        // pop animation and hide
+        b.animate(
+          [{transform:'scale(1)'},{transform:'scale(1.06)'},{transform:'scale(0.18) rotate(20deg)', opacity:0}],
+          {duration:520, easing:'cubic-bezier(.2,.9,.2,1)'}
+        );
+        b.classList.remove('visible');
+        b.style.pointerEvents = 'none';
+
+        // schedule respawn after BALLOON_RESPAWN_MS
+        setTimeout(() => {
+          placeSingleBalloon(b);
+          // small entrance animation
+          b.classList.add('visible');
+          b.animate(
+            [{transform:'scale(.7)'},{transform:'scale(1.12)'},{transform:'scale(1)'}],
+            {duration:420, easing:'cubic-bezier(.2,.9,.2,1)'}
+          );
+          b.style.pointerEvents = 'auto';
+        }, BALLOON_RESPAWN_MS);
+      });
+    });
+
+    /* Position balloons randomly but avoid overlapping the card area */
+    function placeBalloonsRandomly(){
+      const margin = 18; // px margin around card to avoid
+      const cardRect = cardEl.getBoundingClientRect();
+      const avoid = {
+        left: cardRect.left - margin,
+        top: cardRect.top - margin,
+        right: cardRect.right + margin,
+        bottom: cardRect.bottom + margin
+      };
+
+      const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
+      const vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
+
+      balloons.forEach((b, idx) => {
+        // Try to place each balloon up to N times to avoid overlap
+        let placed = false;
+        let attempts = 0;
+        while(!placed && attempts < 80){
+          attempts++;
+          // Prefer sides but allow some spread: choose x either left 4%-22% or right 78%-96%
+          const side = Math.random() < 0.5 ? 'left' : 'right';
+          const x = side === 'left'
+            ? Math.floor((4 + Math.random()*18) * vw / 100)
+            : Math.floor((78 + Math.random()*18) * vw / 100);
+          // Random vertical between 6% and 86% of viewport
+          const y = Math.floor((6 + Math.random()*80) * vh / 100);
+
+          // compute balloon rect (approx)
+          const bw = b.offsetWidth || 84;
+          const bh = b.offsetHeight || 116;
+          const bLeft = x - bw/2;
+          const bRight = x + bw/2;
+          const bTop = y - bh/2;
+          const bBottom = y + bh/2;
+
+          // Check overlap with avoid rect
+          const overlap = !(bRight < avoid.left || bLeft > avoid.right || bBottom < avoid.top || bTop > avoid.bottom);
+
+          if(!overlap){
+            b.style.left = `${Math.max(6, Math.min(vw - bw - 6, bLeft))}px`;
+            b.style.top = `${Math.max(6, Math.min(vh - bh - 6, bTop))}px`;
+            placed = true;
+          }
+        }
+        // If not placed after attempts, fallback to side stack (safe positions)
+        if(!placed){
+          const fallbackX = idx % 2 === 0 ? Math.floor(8 * vw / 100) : Math.floor(88 * vw / 100);
+          const fallbackY = Math.floor((12 + idx*10) % 80 * vh / 100);
+          b.style.left = `${fallbackX}px`;
+          b.style.top = `${fallbackY}px`;
+        }
+      });
+    }
+
+    /* Place a single balloon in a random safe spot (used for respawn) */
+    function placeSingleBalloon(b){
+      const margin = 18;
+      const cardRect = cardEl.getBoundingClientRect();
+      const avoid = {
+        left: cardRect.left - margin,
+        top: cardRect.top - margin,
+        right: cardRect.right + margin,
+        bottom: cardRect.bottom + margin
+      };
+
+      const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
+      const vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
+
+      let placed = false;
+      let attempts = 0;
+      const bw = b.offsetWidth || 84;
+      const bh = b.offsetHeight || 116;
+
+      while(!placed && attempts < 120){
+        attempts++;
+        const side = Math.random() < 0.5 ? 'left' : 'right';
+        const x = side === 'left'
+          ? Math.floor((4 + Math.random()*18) * vw / 100)
+          : Math.floor((78 + Math.random()*18) * vw / 100);
+        const y = Math.floor((6 + Math.random()*80) * vh / 100);
+
+        const bLeft = x - bw/2;
+        const bRight = x + bw/2;
+        const bTop = y - bh/2;
+        const bBottom = y + bh/2;
+
+        const overlap = !(bRight < avoid.left || bLeft > avoid.right || bBottom < avoid.top || bTop > avoid.bottom);
+
+        if(!overlap){
+          b.style.left = `${Math.max(6, Math.min(vw - bw - 6, bLeft))}px`;
+          b.style.top = `${Math.max(6, Math.min(vh - bh - 6, bTop))}px`;
+          placed = true;
+        }
+      }
+
+      if(!placed){
+        // fallback safe spot
+        const fallbackX = Math.random() < 0.5 ? Math.floor(8 * vw / 100) : Math.floor(88 * vw / 100);
+        const fallbackY = Math.floor((12 + Math.random()*60) * vh / 100);
+        b.style.left = `${fallbackX}px`;
+        b.style.top = `${fallbackY}px`;
+      }
+    }
+
+    /* Reveal balloons after a burst: staggered, with a small pop animation */
+    function revealBalloonsAfterBurst(delayAfterBurst = 1400){
+      // place them first so we can animate from their positions
+      placeBalloonsRandomly();
+      balloons.forEach((b, idx) => {
+        // stagger appearance
+        setTimeout(() => {
+          b.classList.add('visible');
+          b.style.pointerEvents = 'auto';
+          // quick pop scale for extra oomph
+          b.animate(
+            [{transform:'scale(.7)'},{transform:'scale(1.12)'},{transform:'scale(1)'}],
+            {duration:420, easing:'cubic-bezier(.2,.9,.2,1)'}
+          );
+        }, delayAfterBurst + idx * 140);
+      });
+    }
+
+    /* Start lightweight confetti and auto-play once; show balloons after the initial burst */
+    window.addEventListener('load', ()=>{
+      initConfetti();
+      // initial gentle burst
+      setTimeout(()=> {
+        burstConfetti(90);
+        // reveal balloons a few moments after the burst
+        revealBalloonsAfterBurst(900);
+      }, 500);
+
+      // auto-play letter after a short pause
+      setTimeout(()=> playLetter(), 800);
+    });
+
+    /* Reposition balloons on resize to keep them out of the card; keep visibility state */
+    window.addEventListener('resize', ()=> {
+      const anyVisible = balloons.some(b => b.classList.contains('visible'));
+      if(anyVisible){
+        setTimeout(()=> placeBalloonsRandomly(), 120);
+      }
+    });
+
+    /* Keyboard accessibility: Enter triggers confetti */
+    document.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter') { burstConfetti(80); }
+    });
+</script>
+</body>
+</html>
